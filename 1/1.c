@@ -27,6 +27,13 @@ void Close() {
   pthread_mutex_unlock(&shared_buffer.mutex);
 }
 
+bool IsMessageReceived() {
+  pthread_mutex_lock(&shared_buffer.mutex);
+  bool isReceived = !shared_buffer.valid;
+  pthread_mutex_unlock(&shared_buffer.mutex);
+  return isReceived;
+}
+
 bool Send(int data) {
   pthread_mutex_lock(&shared_buffer.mutex);
   if (shared_buffer.is_close) {
@@ -79,11 +86,12 @@ int main() {
 
   pthread_create(&t, 0, ThreadRunLoop, &t_id);
 
-  sleep(1);
   for (int i = 0; i < 10; ++i) {
     printf("Send main thread [ %d ]\n", i);
     Send(i);
-    sleep(1);
+    while (!IsMessageReceived()) {
+      ; //Wait
+    }
   }
 
   Close();
